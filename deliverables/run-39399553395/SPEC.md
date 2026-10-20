@@ -2,72 +2,78 @@
 
 ## 功能需求
 
-開發一個 Python 標準函式庫實現的 CSV 統計命令列工具，處理包含 `category` 和 `amount` 欄位的 CSV 檔案。
+開發一個命令列工具 `csv_stats.py`，使用 Python 標準函式庫處理 CSV 檔案，計算包含 `category` 和 `amount` 欄位的統計數據。
 
 ### 輸入格式
 
-- CSV 檔案必須包含兩個欄位：`category`（文字）和 `amount`（數值）
-- 使用逗號分隔
+- 檔案格式：CSV
+- 欄位要求：
+  - `category`: 文字型態
+  - `amount`: 數值型態（Decimal）
+- 精確度：金額保留兩位小數
 
 ### 輸出格式
 
-輸出為 JSON 格式，包含以下欄位：
+輸出 JSON 格式，包含以下鍵值：
 
 ```json
 {
-  "total_count": int,
-  "total_amount": Decimal,
+  "total_count": 0,
+  "total_amount": "0.00",
+  "category_stats": {}
+}
+```
+
+#### 說明
+
+- `total_count`: 總筆數（int）
+- `total_amount`: 總金額（str，保留兩位小數）
+- `category_stats`: 分類統計，鍵為分類名稱，值為包含 `count` 和 `amount` 的物件
+
+### 特殊處理
+
+1. **空白分類**：將空白分類歸類為 `'UNKNOWN'`
+2. **負金額**：支援負數金額計算
+3. **異常處理**：
+   - 只有標頭：返回空結果
+   - 缺欄位：拋出 `FieldError`，CLI 輸出錯誤訊息至 stderr，並以非零退出碼退出
+   - 非法金額：拋出 `ValueError`，CLI 輸出錯誤訊息至 stderr，並以非零退出碼退出
+
+### 範例
+
+假設輸入 CSV 如下：
+
+```
+category,amount
+food,100.50
+transport,50.25
+food,-20.00
+```
+
+則輸出應為：
+
+```json
+{
+  "total_count": 3,
+  "total_amount": "130.75",
   "category_stats": {
-    "category": {
-      "count": int,
-      "amount": Decimal
+    "food": {
+      "count": 2,
+      "amount": "80.50"
+    },
+    "transport": {
+      "count": 1,
+      "amount": "50.25"
     }
   }
 }
 ```
 
-## 資料處理規則
+## 程式設計要求
 
-1. **amount 欄位**：使用 `Decimal` 類型，保留兩位小數。
-2. **category 欄位**：若為空白，視為 `'UNKNOWN'`。
-3. **負數金額**：允許並參與計算。
-
-## 錯誤處理
-
-| 情況 | 行為 |
-|------|------|
-| 只有標頭 | 回傳空結果 |
-| 缺少欄位 | 抛出 `FieldError` 異常 |
-| 金額非數字 | 抛出 `ValueError` 異常 |
-
-## 範例
-
-### 輸入
-```
-category,amount
-食品,100.50
-交通,200.00
-食品,-50.25
-```
-
-### 輸出
-```json
-{"total_count": 3, "total_amount": 250.25, "category_stats": {"食品": {"count": 2, "amount": 50.25}, "交通": {"count": 1, "amount": 200.00}}}
-```
-
-## 測試案例
-
-請確保測試能覆蓋以下情況：
-
-1. 正常運作（含正/負金額）
-2. 負金額
-3. 空白分類
-4. 只有標頭
-5. 缺欄位
-6. 非法金額
-
-## 執行方式
-
-```bash
-python3 csv_stats.py input.csv
-```
+- 使用 Python 標準函式庫
+- 使用 `csv` 模組讀檔
+- 使用 `decimal.Decimal` 進行金額運算
+- 使用 `json` 模組輸出結果
+- 支援命令列參數，接收 CSV 檔案路徑
+- 異常處理需明確拋出並正確回傳錯誤訊息
